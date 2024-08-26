@@ -26,8 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: My First Terraform Setup
-        uses: hashicorp/setup-terraform@v1 # installs the terraform application
+      - name: Terraform Setup
+        uses: hashicorp/setup-terraform@v2 # installs the terraform application
         with:
           cli_config_credentials_token: ${{ secrets.TF_LOGIN_TOKEN }}
       
