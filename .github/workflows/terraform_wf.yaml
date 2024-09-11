@@ -49,4 +49,5 @@ jobs:
  
 #create 2 workflow for 1 repository
 #1 workflow creates your resources and it can be triggered on push event,
-#workflow #2 needs to be only on manual workflow dispatch and it needs to destroy
+#workflow #2 needs to be only on manual workflow dis
+atch and it needs to destroy

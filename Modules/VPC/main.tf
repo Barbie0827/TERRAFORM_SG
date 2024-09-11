@@ -1,39 +1,65 @@
-resource "aws_vpc" "main" {
-  cidr_block           = var.vpc_cidr_block
-  enable_dns_support   = var.enable_dns_support
-  enable_dns_hostnames = var.enable_dns_hostnames
- 
-  tags = merge({
-    Name = var.vpc_name
-  }, var.vpc_tags)
-}
- 
-resource "aws_security_group" "main" {
-  vpc_id = aws_vpc.main.id
+resource "aws_security_group" "default" {
+  for_each    = var.security_groups
+  name        = each.key
+  description = each.value.description
+  vpc_id      = var.vpc_id
  
   dynamic "ingress" {
-    for_each = [for rule in var.sg_rules : rule if rule.type == "ingress"]
+    for_each = each.value.ingress_rules != null ? each.value.ingress_rules : []
     content {
+      description = ingress.value.description
       from_port   = ingress.value.from_port
       to_port     = ingress.value.to_port
       protocol    = ingress.value.protocol
-      cidr_blocks = ingress.value.cidr_blocks
-      description = ingress.value.description
+      cidr_blocks = ingress.value.cidr_blocks != null ? ingress.value.cidr_blocks : null
+      security_groups = ingress.value.security_groups != null ? ingress.value.security_groups : null
     }
   }
- 
   dynamic "egress" {
-    for_each = [for rule in var.sg_rules : rule if rule.type == "egress"]
+    for_each = each.value.egress_rules != null ? each.value.egress_rules : []
+ 
     content {
+      description = egress.value.description
       from_port   = egress.value.from_port
       to_port     = egress.value.to_port
       protocol    = egress.value.protocol
-      cidr_blocks = egress.value.cidr_blocks
-      description = egress.value.description
+      cidr_blocks = egress.value.cidr_blocks != null ? egress.value.cidr_blocks : null
+      security_groups = egress.value.security_groups != null ? egress.value.security_groups : null
     }
   }
  
-  tags = merge({
-    Name = "${var.vpc_name}-sg"
-  }, var.vpc_tags)
+  tags = {
+    Name = join("-", ["security-group", each.key])
+  }
+}
+ 
+variable "vpc_id" {
+  type = string
+}
+ 
+variable "security_groups" {
+  description = "A map of security groups with their rules"
+  type = map(object({
+    description = string
+    ingress_rules = optional(list(object({
+      from_port   = number
+      to_port     = number
+      description = optional(string)
+      cidr_blocks = optional(list(string))
+      security_groups = optional(list(string))
+      protocol    = string
+    })))
+    egress_rules = optional(list(object({
+      from_port   = number
+      to_port     = number
+      description = optional(string)
+      cidr_blocks = optional(list(string))
+      security_groups = optional(list(string))
+      protocol    = string
+    })))
+  }))
+  default = {}
+}
+output "my-security_gr_id" {
+value = {for k, v in aws_security_group.default: k => v.id}
 }
